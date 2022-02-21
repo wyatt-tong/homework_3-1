@@ -27,7 +27,7 @@ class ibkr_app(EWrapper, EClient):
         # I've already done the same general process you need to go through
         # in the self.error_messages instance variable, so you can use that as
         # a guide.
-        self.historical_data = pd.DataFrame(data={'date':[], 'open':[], 'high':[], 'low':[], 'close':[], 'colume':[],\
+        self.historical_data = pd.DataFrame(data={'date':[], 'open':[], 'high':[], 'low':[], 'close':[], 'volume':[],\
                                                   'Average':[], 'BarCount':[]})
         self.historical_data_end = ''
         self.contract_details = ''
