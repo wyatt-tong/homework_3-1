@@ -1,5 +1,8 @@
-pandas
-dash
-ibapi
+pandas~=1.4.1
+dash~=2.2.0
+ibapi~=9.81.1.post1
 jupyter
 kaleido
+
+plotly~=5.6.0
+waitress~=2.0.0
