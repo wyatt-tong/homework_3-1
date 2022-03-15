@@ -99,6 +99,15 @@ app.layout = html.Div([
             )
         ]
     ),
+    html.Div(
+        ["RTH: ", dcc.Dropdown(
+            ["True", "False"],
+            "True",
+            id='edt-useRTH'
+        )],
+
+        style={'width': '365px'}
+    ),
 
     html.H4("Enter a currency pair:"),
     html.P(
@@ -166,11 +175,12 @@ app.layout = html.Div([
     [State('currency-input', 'value'), State('what-to-show', 'value'),
      State('edt-date', 'date'), State('edt-hour', 'value'),
      State('edt-minute', 'value'), State('edt-second', 'value'),
-     State('edt-duration', 'value'), State('edt-barsize', 'value'), State('duration-input', 'value')]
+     State('edt-duration', 'value'), State('edt-barsize', 'value'),
+     State('duration-input', 'value'),  State('edt-useRTH', 'value')]
 )
 def update_candlestick_graph(n_clicks, currency_string, what_to_show,
                              edt_date, edt_hour, edt_minute, edt_second, edt_duration, edt_barsize,
-                             duration_input):
+                             duration_input, edt_useRTH):
     # n_clicks doesn't
     # get used, we only include it for the dependency.
 
@@ -187,6 +197,11 @@ def update_candlestick_graph(n_clicks, currency_string, what_to_show,
     contract.exchange = 'IDEALPRO' # 'IDEALPRO' is the currency exchange.
     contract.currency = currency_string.split(".")[1]
     print(edt_duration)
+    RTH = True
+    if edt_useRTH == 'True':
+        RTH = True
+    if edt_useRTH == 'False':
+        RTH = False
     ############################################################################
     ############################################################################
     # This block is the one you'll need to work on. UN-comment the code in this
@@ -219,7 +234,7 @@ def update_candlestick_graph(n_clicks, currency_string, what_to_show,
         durationStr= duration_input + ' ' + edt_duration,#'1 D',       # <-- make a reactive input
         barSizeSetting=edt_barsize,  # <-- make a reactive input
         whatToShow=what_to_show,
-        useRTH=True               # <-- make a reactive input
+        useRTH=RTH              # <-- make a reactive input
     )
     # # Make the candlestick figure
     fig = go.Figure(
