@@ -32,7 +32,6 @@ class ibkr_app(EWrapper, EClient):
         self.historical_data_end = ''
         self.contract_details = ''
         self.contract_details_end = ''
-        #self.df =
 
     def error(self, reqId, errorCode, errorString):
         print("Error: ", reqId, " ", errorCode, " ", errorString)
@@ -67,6 +66,14 @@ class ibkr_app(EWrapper, EClient):
                            'Average': [average], 'BarCount': [barCount]})
         self.historical_data = pd.concat([self.historical_data, df])
        # print(self.historical_data)
+    def contractDetails(self, reqId:int, contractDetails):
+        print(type(contractDetails))
+        print(contractDetails)
+        self.contract_details = contractDetails
+
+    def contractDetailsEnd(self, reqId:int):
+        print("ContractDetailsEnd. ReqId:", reqId)
+        self.contract_details_end = reqId
 
 
 
@@ -91,6 +98,32 @@ def fetch_managed_accounts(hostname=default_hostname, port=default_port,
     app.disconnect()
     return app.managed_accounts
 
+def fetch_contract_details(contract, hostname=default_hostname,
+                          port=default_port, client_id=default_client_id):
+    app = ibkr_app()
+    app.connect(hostname, port, client_id)
+    while not app.isConnected():
+        time.sleep(0.01)
+
+    def run_loop():
+        app.run()
+
+    api_thread = threading.Thread(target=run_loop, daemon=True)
+    api_thread.start()
+    while isinstance(app.next_valid_id, type(None)):
+        time.sleep(0.01)
+    tickerId = app.next_valid_id
+    app.reqContractDetails(tickerId, contract)
+    while app.contract_details_end != tickerId:
+        time.sleep(0.01)
+        print(2222222)
+        if app.error_messages.iloc[-1]['errorCode'] == 200:
+            print(app.error_messages)
+            app.disconnect()
+            return None, app.error_messages.iloc[-1]['errorString']
+    app.disconnect()
+    return app.contract_details, None
+
 def fetch_historical_data(contract, endDateTime='', durationStr='30 D',
                           barSizeSetting='1 hour', whatToShow='MIDPOINT',
                           useRTH=True, hostname=default_hostname,
@@ -113,3 +146,5 @@ def fetch_historical_data(contract, endDateTime='', durationStr='30 D',
         time.sleep(0.01)
     app.disconnect()
     return app.historical_data
+
+

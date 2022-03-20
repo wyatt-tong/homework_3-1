@@ -136,7 +136,12 @@ app.layout = html.Div([
     # Div to hold the initial instructions and the updated info once submit is pressed
     html.Div(id='currency-output', children='Enter a currency code and press submit'),
     # Div to hold the candlestick graph
-    html.Div([dcc.Graph(id='candlestick-graph')]),
+    dcc.Loading(
+        id="loading",
+        type="circle",
+        children=html.Div([dcc.Graph(id='candlestick-graph')])
+    ),
+
     # Another line break
     html.Br(),
     # Section title
@@ -197,12 +202,15 @@ def update_candlestick_graph(n_clicks, currency_string, what_to_show,
     contract.secType  = 'CASH'
     contract.exchange = 'IDEALPRO' # 'IDEALPRO' is the currency exchange.
     contract.currency = currency_string.split(".")[1]
+    errmsg = None
+    contract_details, errmsg = fetch_contract_details(contract=contract)
     print(edt_duration)
     RTH = True
     if edt_useRTH == 'True':
         RTH = True
     if edt_useRTH == 'False':
         RTH = False
+
     ############################################################################
     ############################################################################
     # This block is the one you'll need to work on. UN-comment the code in this
@@ -229,28 +237,41 @@ def update_candlestick_graph(n_clicks, currency_string, what_to_show,
         sec = to_time(edt_second)
 
         endDateTime = date + ' ' + hour + ":" + min + ":" + sec
-    cph = fetch_historical_data(
-        contract=contract,
-        endDateTime= endDateTime, #'',#edt_date,
-        durationStr= duration_input + ' ' + edt_duration,#'1 D',       # <-- make a reactive input
-        barSizeSetting=edt_barsize,  # <-- make a reactive input
-        whatToShow=what_to_show,
-        useRTH=RTH              # <-- make a reactive input
-    )
-    # # Make the candlestick figure
-    fig = go.Figure(
-        data=[
-            go.Candlestick(
-                x=cph['date'],
-                open=cph['open'],
-                high=cph['high'],
-                low=cph['low'],
-                close=cph['close']
-            )
-        ]
-    )
-    # # Give the candlestick figure a title
-    fig.update_layout(title=('Exchange Rate: ' + currency_string))
+
+    if errmsg is None:
+        cph = fetch_historical_data(
+            contract=contract,
+            endDateTime= endDateTime, #'',#edt_date,
+            durationStr= duration_input + ' ' + edt_duration,#'1 D',       # <-- make a reactive input
+            barSizeSetting=edt_barsize,  # <-- make a reactive input
+            whatToShow=what_to_show,
+            useRTH=RTH              # <-- make a reactive input
+        )
+
+        # # Make the candlestick figure
+        fig = go.Figure(
+            data=[
+                go.Candlestick(
+                    x=cph['date'],
+                    open=cph['open'],
+                    high=cph['high'],
+                    low=cph['low'],
+                    close=cph['close']
+                )
+            ]
+        )
+        # # Give the candlestick figure a title
+        fig.update_layout(title=('Exchange Rate: ' + currency_string))
+    else:
+        fig = go.Figure(
+            data=[
+                go.Candlestick(
+                )
+            ]
+        )
+        fig.update_layout(title=('Exchange Rate: ' + currency_string))
+        print(errmsg)
+
     ############################################################################
     ############################################################################
 
