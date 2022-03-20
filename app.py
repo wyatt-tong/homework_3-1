@@ -162,7 +162,12 @@ app.layout = html.Div([
     # Numeric input for the trade amount
     dcc.Input(id='trade-amt', value='20000', type='number'),
     # Submit button for the trade
-    html.Button('Trade', id='trade-button', n_clicks=0)
+    html.Button('Trade', id='trade-button', n_clicks=0),
+    dcc.ConfirmDialog(
+        id='confirm-alert',
+        message='',
+    ),
+
 
 ])
 
@@ -170,7 +175,9 @@ app.layout = html.Div([
 @app.callback(
     [ # there's more than one output here, so you have to use square brackets to pass it in as an array.
         Output(component_id='currency-output', component_property='children'),
-        Output(component_id='candlestick-graph', component_property='figure')
+        Output(component_id='candlestick-graph', component_property='figure'),
+        Output(component_id='confirm-alert', component_property='displayed'),
+        Output(component_id='confirm-alert', component_property='message')
     ],
     Input('submit-button', 'n_clicks'),
     # The callback function will
@@ -271,7 +278,7 @@ def update_candlestick_graph(n_clicks, currency_string, what_to_show,
         )
         fig.update_layout(title=('Exchange Rate: ' + currency_string))
         print(errmsg)
-
+        return ('Submitted query for ' + currency_string), fig,True, 'Error: ' + errmsg
     ############################################################################
     ############################################################################
 
@@ -299,7 +306,7 @@ def update_candlestick_graph(n_clicks, currency_string, what_to_show,
     ############################################################################
 
     # Return your updated text to currency-output, and the figure to candlestick-graph outputs
-    return ('Submitted query for ' + currency_string), fig
+    return ('Submitted query for ' + currency_string), fig, False, ''
 
 # Callback for what to do when trade-button is pressed
 @app.callback(
