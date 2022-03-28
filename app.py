@@ -1,17 +1,21 @@
 import dash
 import plotly.graph_objects as go
-from dash import dcc
+from dash import dcc, dash_table
 from dash import html
 from dash.dependencies import Input, Output, State
 from ibapi.contract import Contract
+from ibapi.order import Order
+
 from fintech_ibkr import *
 import pandas as pd
 
 # Make a Dash app!
 app = dash.Dash(__name__)
 server = app.server
+
 # Define the layout.
-#add
+# add
+df = pd.read_csv('submitted_orders.csv')
 app.layout = html.Div([
 
     # Section title
@@ -26,77 +30,77 @@ app.layout = html.Div([
             "MIDPOINT",
             id='what-to-show'
         ),
-        style = {'width': '365px'}
+        style={'width': '365px'}
     ),
     html.H4("Select value for endDateTime:"),
     html.Div(
-        children = [
+        children=[
             html.P("You may select a specific endDateTime for the call to " + \
                    "fetch_historical_data. If any of the below is left empty, " + \
                    "the current present moment will be used.")
         ],
-        style = {'width': '365px'}
+        style={'width': '365px'}
     ),
     html.H4("Select duration for whatToShow:"),
     html.Div(
-    ["Input Duration: ", dcc.Input(
+        ["Input Duration: ", dcc.Input(
             id='duration-input', value='30', type='text'
         ), dcc.Dropdown(
             ["S", "D", "W"],
-                "D",
+            "D",
             id='edt-duration'
         )],
 
-        style = {'width': '365px'}
+        style={'width': '365px'}
     ),
     html.H4("Select bar size for whatToShow:"),
     html.Div(
 
         dcc.Dropdown(
-            ['30 secs', '1 min', '15 mins', '30 mins', '1 hour',  '1 day'],
+            ['30 secs', '1 min', '15 mins', '30 mins', '1 hour', '1 day'],
             "1 day",
             id='edt-barsize'
         ),
         style={'width': '365px'}
     ),
     html.Div(
-        children = [
+        children=[
             html.Div(
-                children = [
+                children=[
                     html.Label('Date:'),
                     dcc.DatePickerSingle(id='edt-date')
                 ],
-                style = {
+                style={
                     'display': 'inline-block',
                     'margin-right': '20px',
                 }
             ),
             html.Div(
-                children = [
+                children=[
                     html.Label('Hour:'),
                     dcc.Dropdown(list(range(24)), id='edt-hour'),
                 ],
-                style = {
+                style={
                     'display': 'inline-block',
                     'padding-right': '5px'
                 }
             ),
             html.Div(
-                children = [
+                children=[
                     html.Label('Minute:'),
                     dcc.Dropdown(list(range(60)), id='edt-minute'),
                 ],
-                style = {
+                style={
                     'display': 'inline-block',
                     'padding-right': '5px'
                 }
             ),
             html.Div(
-                children = [
+                children=[
                     html.Label('Second:'),
                     dcc.Dropdown(list(range(60)), id='edt-second'),
                 ],
-                style = {'display': 'inline-block'}
+                style={'display': 'inline-block'}
             )
         ]
     ),
@@ -123,7 +127,7 @@ app.layout = html.Div([
     # Currency pair text input, within its own div.
     html.Div(
         # The input object itself
-        ["Input Currency: ", dcc.Input(
+        children=["Input Currency: ", dcc.Input(
             id='currency-input', value='AUD.CAD', type='text'
         )],
         # Style it so that the submit button appears beside the input.
@@ -144,8 +148,52 @@ app.layout = html.Div([
 
     # Another line break
     html.Br(),
+    html.H3("Section 2: Trading"),
+    html.H4("Contract Inputs"),
+    html.Div(
+        # The input object itself
+        children=["Contract Symbol: ", dcc.Input(
+        id='symbol-input', value='AUD', type='text'
+    )],
+        # Style it so that the submit button appears beside the input.
+        style={'display': 'inline-block', 'padding-top': '5px'}
+    ),
+    html.Div(
+        # The input object itself
+        children=["secType ", dcc.Input(
+                 id='secType-input', value='CASH', type='text'
+             )],
+        # Style it so that the submit button appears beside the input.
+        style={'display': 'inline-block', 'padding-top': '5px'}
+    ),
+    html.Div(
+        # The input object itself
+        children=["Currency ", dcc.Input(
+                 id='contract-currency-input', value='USD', type='text'
+             )],
+        # Style it so that the submit button appears beside the input.
+        style={'display': 'inline-block', 'padding-top': '5px'}
+    ),
+    html.Div(
+        # The input object itself
+        children=["Exchange ", dcc.Input(
+                 id='contract-exchange-input', value='IDEALPRO', type='text'
+             )],
+        # Style it so that the submit button appears beside the input.
+        style={'display': 'inline-block', 'padding-top': '5px'}
+    ),
+    html.Div(
+        # The input object itself
+        children=["Primary Exchange ", dcc.Input(
+                 id='primary-exchange-input', type='text'
+             )],
+        # Style it so that the submit button appears beside the input.
+        style={'display': 'inline-block', 'padding-top': '5px'}
+    ),
+
+    html.H4("Order Inputs"),
     # Section title
-    html.H6("Make a Trade"),
+    #html.H6("Make a Trade"),
     # Div to confirm what trade was made
     html.Div(id='trade-output'),
     # Radio items to select buy or sell
@@ -157,23 +205,41 @@ app.layout = html.Div([
         ],
         value='BUY'
     ),
+    html.Br(),
+    dcc.RadioItems(
+        id='mkt-or-lmt',
+        options=[
+            {'label': 'Market', 'value': 'MKT'},
+            {'label': 'Limit', 'value': 'LMT'}
+        ],
+        value='MKT'
+    ),
+    html.Br(),
+    html.Label("Limit Price"),
+    dcc.Input(id='lmt-price-input', type='number'),
+    html.Br(),
     # Text input for the currency pair to be traded
-    dcc.Input(id='trade-currency', value='AUDCAD', type='text'),
+   # dcc.Input(id='trade-currency', value='AUDCAD', type='text'),
     # Numeric input for the trade amount
-    dcc.Input(id='trade-amt', value='20000', type='number'),
+    html.Br(),
+    html.Label('Total Quantity'),
+    dcc.Input(id='trade-amt', value='200', type='number'),
+    html.Br(),
+
+
     # Submit button for the trade
     html.Button('Trade', id='trade-button', n_clicks=0),
     dcc.ConfirmDialog(
         id='confirm-alert',
         message='',
     ),
-
-
+    dash_table.DataTable(df.to_dict('records'), [{"name": i, "id": i} for i in df.columns], id='table')
 ])
+
 
 # Callback for what to do when submit-button is pressed
 @app.callback(
-    [ # there's more than one output here, so you have to use square brackets to pass it in as an array.
+    [  # there's more than one output here, so you have to use square brackets to pass it in as an array.
         Output(component_id='currency-output', component_property='children'),
         Output(component_id='candlestick-graph', component_property='figure'),
         Output(component_id='confirm-alert', component_property='displayed'),
@@ -189,7 +255,7 @@ app.layout = html.Div([
      State('edt-date', 'date'), State('edt-hour', 'value'),
      State('edt-minute', 'value'), State('edt-second', 'value'),
      State('edt-duration', 'value'), State('edt-barsize', 'value'),
-     State('duration-input', 'value'),  State('edt-useRTH', 'value')]
+     State('duration-input', 'value'), State('edt-useRTH', 'value')]
 )
 def update_candlestick_graph(n_clicks, currency_string, what_to_show,
                              edt_date, edt_hour, edt_minute, edt_second, edt_duration, edt_barsize,
@@ -205,9 +271,9 @@ def update_candlestick_graph(n_clicks, currency_string, what_to_show,
     # First things first -- what currency pair history do you want to fetch?
     # Define it as a contract object!
     contract = Contract()
-    contract.symbol   = currency_string.split(".")[0]
-    contract.secType  = 'CASH'
-    contract.exchange = 'IDEALPRO' # 'IDEALPRO' is the currency exchange.
+    contract.symbol = currency_string.split(".")[0]
+    contract.secType = 'CASH'
+    contract.exchange = 'IDEALPRO'  # 'IDEALPRO' is the currency exchange.
     contract.currency = currency_string.split(".")[1]
     errmsg = None
     contract_details, errmsg = fetch_contract_details(contract=contract)
@@ -235,6 +301,7 @@ def update_candlestick_graph(n_clicks, currency_string, what_to_show,
         if len(t) == 1:
             t = "0" + t
         return t
+
     if any([i is None for i in [edt_date, edt_hour, edt_minute, edt_second]]):
         endDateTime = ''
     else:
@@ -248,11 +315,11 @@ def update_candlestick_graph(n_clicks, currency_string, what_to_show,
     if errmsg is None:
         cph = fetch_historical_data(
             contract=contract,
-            endDateTime= endDateTime, #'',#edt_date,
-            durationStr= duration_input + ' ' + edt_duration,#'1 D',       # <-- make a reactive input
+            endDateTime=endDateTime,  # '',#edt_date,
+            durationStr=duration_input + ' ' + edt_duration,  # '1 D',       # <-- make a reactive input
             barSizeSetting=edt_barsize,  # <-- make a reactive input
             whatToShow=what_to_show,
-            useRTH=RTH              # <-- make a reactive input
+            useRTH=RTH  # <-- make a reactive input
         )
 
         # # Make the candlestick figure
@@ -278,7 +345,7 @@ def update_candlestick_graph(n_clicks, currency_string, what_to_show,
         )
         fig.update_layout(title=('Exchange Rate: ' + currency_string))
         print(errmsg)
-        return ('Submitted query for ' + currency_string), fig,True, 'Error: ' + errmsg
+        return ('Submitted query for ' + currency_string), fig, True, 'Error: ' + errmsg
     ############################################################################
     ############################################################################
 
@@ -308,32 +375,76 @@ def update_candlestick_graph(n_clicks, currency_string, what_to_show,
     # Return your updated text to currency-output, and the figure to candlestick-graph outputs
     return ('Submitted query for ' + currency_string), fig, False, ''
 
+
 # Callback for what to do when trade-button is pressed
 @app.callback(
     # We're going to output the result to trade-output
     Output(component_id='trade-output', component_property='children'),
+    Output(component_id='table', component_property='data'),
     # We only want to run this callback function when the trade-button is pressed
     Input('trade-button', 'n_clicks'),
     # We DON'T want to run this function whenever buy-or-sell, trade-currency, or trade-amt is updated, so we pass those
     #   in as States, not Inputs:
-    [State('buy-or-sell', 'value'), State('trade-currency', 'value'), State('trade-amt', 'value')],
+   # [State('buy-or-sell', 'value'), State('trade-currency', 'value'), State('trade-amt', 'value')],
+    [State('buy-or-sell', 'value'), State('contract-currency-input','value'), State('trade-amt', 'value'), State('mkt-or-lmt', 'value'),
+     State('secType-input', 'value'), State('symbol-input', 'value'), State('contract-exchange-input', 'value'),
+     State('primary-exchange-input', 'value'),
+     State('lmt-price-input', 'value'), ],
     # We DON'T want to start executing trades just because n_clicks was initialized to 0!!!
     prevent_initial_call=True
 )
-def trade(n_clicks, action, trade_currency, trade_amt): # Still don't use n_clicks, but we need the dependency
+def trade(n_clicks, action, trade_currency, trade_amt, order_type,
+          sec_type, symbol, exchange,
+          primary_exchange,
+          limit_price):  # Still don't use n_clicks, but we need the dependency
 
     # Make the message that we want to send back to trade-output
-    msg = action + ' ' + trade_amt + ' ' + trade_currency
-
-    # Make our trade_order object -- a DICTIONARY.
-    trade_order = {
-        "action": action,
-        "trade_currency": trade_currency,
-        "trade_amt": trade_amt
-    }
-
-    # Return the message, which goes to the trade-output div's "children" attribute.
-    return msg
+    msg = action + ' ' + str(trade_amt) + ' ' + trade_currency
+    contract = Contract()
+    contract.symbol = symbol
+    contract.secType = sec_type
+    contract.exchange = exchange  # 'IDEALPRO' is the currency exchange.
+    #contract.currency = value.split(".")[1]
+    contract.currency = trade_currency
+    if primary_exchange is not None:
+        contract.primaryExchange = primary_exchange
+    order = Order()
+    order.action = action
+    order.orderType = order_type
+    order.totalQuantity = trade_amt
+    if order_type == 'LMT':
+        if limit_price is None:
+            return 'Limit price must have a value!'
+        order.lmtPrice = limit_price
+    fetch_contract_details_new(contract)
+    #file_path = 'submitted_orders.csv'
+    file_path = 'submitted_orders.csv'
+    info = place_order(contract, order)
+    # data = pd.read_csv(file_path)
+    # data = pd.concat([data, new_line], axis=1)
+    # data.to_csv(file_path)
+    order_id = info['order_id'][0]
+    client_id = info['client_id'][0]
+    perm_id = info['perm_id'][0]
+    con_id = contract.conId
+    timestamp = info['timestamp'][0]
+    new_data = {'timestamp':[''],
+                'order_id':[order_id],
+                'client_id':[client_id],
+                'perm_id':[perm_id],
+               'con_id':[con_id],
+               'symbol':[symbol],
+               'action':[action],
+               'size':[trade_amt],
+               'order_type':[order_type],
+               'lmt_price':[limit_price]}
+    new_line = pd.DataFrame(new_data)
+    new_line.to_csv(file_path, mode='a', header=False, index=False)
+    df = pd.read_csv(file_path)
+    #df.columns = ['timestamp', 'order_id', 'client_id', 'perm_id', 'con_id', 'symbol', 'action','size', 'order_type', 'lmt_price']
+    print(11111111111111111111111111111111)
+   # print(new_line)
+    return msg, df.to_dict('records')
 
 # Run it!
 if __name__ == '__main__':
