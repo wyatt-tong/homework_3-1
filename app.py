@@ -444,7 +444,8 @@ def trade(n_clicks, action, trade_currency, trade_amt, order_type,
     df = pd.read_csv(file_path)
     #df.columns = ['timestamp', 'order_id', 'client_id', 'perm_id', 'con_id', 'symbol', 'action','size', 'order_type', 'lmt_price']
     print(11111111111111111111111111111111)
-   # print(new_line)
+
+
     return msg, df.to_dict('records')
 
 # Run it!
