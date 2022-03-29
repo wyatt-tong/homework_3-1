@@ -20,6 +20,7 @@ class ibkr_app(EWrapper, EClient):
             'reqId', 'errorCode', 'errorString'
         ])
         self.next_valid_id = None
+        self.current_time = None
         ########################################################################
         # Here, you'll need to change Line 30 to initialize
         # self.historical_data as a dataframe having the column names you
@@ -179,6 +180,21 @@ def fetch_contract_details(contract, hostname=default_hostname,
             return None, app.error_messages.iloc[-1]['errorString']
     app.disconnect()
     return app.contract_details, None
+
+def fetch_current_time(hostname=default_hostname,
+                       port=default_port, client_id=default_client_id):
+    app = ibkr_app()
+    app.connect(hostname, int(port), int(client_id))
+    start_time = datetime.now()
+    while not app.isConnected():
+        time.sleep(0.01)
+        if (datetime.now() - start_time).seconds > timeout_sec:
+            app.disconnect()
+            raise Exception(
+                "fetch_current_time",
+                "timeout",
+                "couldn't connect to IBKR"
+            )
 
 def fetch_historical_data(contract, endDateTime='', durationStr='30 D',
                           barSizeSetting='1 hour', whatToShow='MIDPOINT',
