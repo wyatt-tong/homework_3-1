@@ -428,6 +428,7 @@ def trade(n_clicks, action, trade_currency, trade_amt, order_type,
     perm_id = info['perm_id'][0]
     con_id = contract.conId
     timestamp = fetch_current_time()
+    print(timestamp)
     new_data = {'timestamp':[timestamp],
                 'order_id':[order_id],
                 'client_id':[client_id],

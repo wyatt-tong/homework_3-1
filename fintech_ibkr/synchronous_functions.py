@@ -196,6 +196,36 @@ def fetch_current_time(hostname=default_hostname,
                 "couldn't connect to IBKR"
             )
 
+    def run_loop():
+        app.run()
+
+    api_thread = threading.Thread(target=run_loop, daemon=True)
+    api_thread.start()
+    start_time = datetime.now()
+    while app.next_valid_id is None:
+        time.sleep(0.01)
+        if (datetime.now() - start_time).seconds > timeout_sec:
+            app.disconnect()
+            raise Exception(
+                "fetch_current_time",
+                "timeout",
+                "next_valid_id not received"
+            )
+
+    app.reqCurrentTime()
+    start_time = datetime.now()
+    while app.current_time is None:
+        time.sleep(0.01)
+        if (datetime.now() - start_time).seconds > timeout_sec:
+            app.disconnect()
+            raise Exception(
+                "fetch_current_time",
+                "timeout",
+                "current_time not received"
+            )
+    app.disconnect()
+    return app.current_time
+
 def fetch_historical_data(contract, endDateTime='', durationStr='30 D',
                           barSizeSetting='1 hour', whatToShow='MIDPOINT',
                           useRTH=True, hostname=default_hostname,
